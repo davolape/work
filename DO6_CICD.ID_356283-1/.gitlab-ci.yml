@@ -1,0 +1,39 @@
+stages:
+  - build
+  - style
+  - test
+  - deploy
+
+build_job:
+  stage: build
+  script:
+    - export PATH=/usr/bin:/bin:$PATH
+    - cd code-samples
+    - make
+  artifacts:
+    paths:
+      - code-samples/
+    expire_in: 30 days
+
+style_check:
+  stage: style
+  script:
+    - clang-format --dry-run --Werror $(find . -name "*.c" -o -name "*.h")
+
+integration_tests:
+  stage: test
+  script:
+    - ./tests/integration.sh
+  needs:
+    - build_job
+    - style_check
+
+deploy_job:
+  stage: deploy
+  when: manual
+  script:
+    - ./deploy.sh
+  needs:
+    - build_job
+    - style_check
+    - integration_tests
